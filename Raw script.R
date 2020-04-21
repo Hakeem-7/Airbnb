@@ -124,9 +124,10 @@ y.test<-y[test.r]
 
 grid<- 10^seq(6,-2,length = 100)
 
-lasso <- glmnet(x[train.r,], y[train.r], alpha = 1, lambda = grid) #alpha = 1 is lasso
+lasso <- glmnet(x[train.r,], y[train.r], alpha = 1, lambda = grid, standardize = TRUE) #alpha = 1 is lasso
 plot(lasso)
 
+# Cross-validation for selecting the best lambda
 set.seed(7)
 cv.out<-cv.glmnet(x[train.r, ],y[train.r],alpha = 1)
 plot(cv.out)
@@ -145,6 +146,20 @@ lasso.coef[lasso.coef!=0]
 
 
 
+# Support Vector Regression #
+
+# sample splitting
+
+train_id <- sample(nrow(listing_v1), 0.7*nrow(listing_v1))
+train <- listing_v1[train_id, ]
+test <- listing_v1[-train_id,]
+
+library(e1071)
+set.seed(7)
+svm_model <- svm(train$price~., data = train, kernel = "gaussian", scale = TRUE) #linear Kernel
+
+
+?svm
 
 
 
@@ -155,9 +170,18 @@ lasso.coef[lasso.coef!=0]
 
 
 
+# Neural Network #
 
 library(neuralnet)
 
+# Scaling
+# Create a normalization function.
+normalize <- function(x){
+  y = ((x - min(x))/(max(x)-min(x)))
+  return(y)
+}
+
+listing_norm <- as.data.frame(lapply(listing_v1, normalize)) #Normalizing a dataframe
 ?neuralnet
 
 
