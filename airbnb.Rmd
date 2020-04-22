@@ -1,9 +1,17 @@
-library(dplyr)
-library(tidyverse)
-library(DT)
-library("d3heatmap")
+---
+title: "Airbnb"
+author: "Akeem Ajede"
+date: "4/22/2020"
+output: html_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
+## Data Visualization
+
+```{r}
 listing <- as_tibble(read.csv("files/listings.csv"))
 head(listing)
 
@@ -26,11 +34,6 @@ price_var <- listing %>%
   arrange(desc(price_max))%>%
   DT::datatable()
 
-price_var
-
-price_var1 <- as.matrix(price_var)
-heatmap(price_var1)
-
 # average rental price in each neighbourhood
 options(digits = 4)
 price_avg <- listing %>%
@@ -43,12 +46,11 @@ price_avg <- listing %>%
 
 price_avg
 
+```
 
+# Pre-processing and Feature Selection
 
-#------------------------------------------------#
-          #Detailed Listing#
-#------------------------------------------------#
-
+```{r}
 #pre-processing
 
 # Replaced rentals with no cleaning fee with $0.
@@ -68,9 +70,10 @@ listing_v <- det_listing[keeps] %>%
   rename("zip_code" = neighbourhood_cleansed)%>%
   select(-price, price) # Push price variable to the back
 
-glimpse(listing_v)
+#glimpse(listing_v)
 dim(listing_v)
 
+# function for determining variable class
 class_variable <- function(data){
   sapply(data, function(x) class(x))
 }
@@ -89,8 +92,11 @@ library(ggcorrplot)
 library(corrplot)
 ggcorrplot(cor(listing_v[,-c(1,2,3)]))
 corrplot(cor(listing_v[,-c(1,2,3)]))
+```
 
+## Feature selection using lasso regression
 
+```{r}
 # Feature selection using lasso regression
 
 keeps1 <- c("accommodates", "bathrooms", "bedrooms", "beds", "price","cleaning_fee",
@@ -143,10 +149,12 @@ lasso.coef<-predict(lasso.out, type = "coefficients", s=bestlam)[2:9,]
 lasso.coef
 # None of the features was eliminated. Thus, all features are relevant for modelling.
 lasso.coef[lasso.coef!=0]
+```
 
 
+## Support Vector Regression
 
-# Support Vector Regression #
+```{r}
 
 # sample splitting
 train_id <- sample(nrow(listing_v1), 0.7*nrow(listing_v1))
@@ -186,13 +194,12 @@ table
 rmse <- sqrt((sum(pred - test$price)^2))
 # the root mean square error of the model is 721,507. That is significantly lower than Lasso.
 rmse
-cor(pred,test$price)*100 # 24.66
+```
 
 
+## Neural Network with backpropagation
 
-
-# Neural Network #
-
+```{r}
 library(neuralnet)
 
 # Scaling
@@ -231,10 +238,8 @@ ggplot(data=long, aes(x=x, y=value, group=variable, colour=variable))+
 
 # Model
 set.seed(7)
-nn_model <- neuralnet(train_norm$price~., data = train_norm, hidden = 8, linear.output = FALSE,
-                      act.fct = "logistic")
-plot(nn_model)
-
+nn_model <- neuralnet(train_norm$price~., data = train_norm, hidden = 5, linear.output = FALSE,
+                      act.fct = softplus)
 plot(nn_model)
 
 # Model evaluation
@@ -243,11 +248,10 @@ pred1 <- nn_pred$net.result
 
 # correlation is used instead of confusion matrix - Not a classification problem
 
-cor(pred1,test_norm$price)
 #accuracy is 87.2% using sigmoid activation function.
+cor(pred1,test_norm$price)
 
-
-
+```
 
 
 
